@@ -1,0 +1,22 @@
+@import url("icons.scss");
+
+#root {
+  height: 100vh;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.nav_tab {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  justify-content: center;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+
+  &__active,
+  &:hover {
+    background: #a9e9e0bf;
+  }
+}
