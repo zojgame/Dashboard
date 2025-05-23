@@ -12,7 +12,9 @@ function App() {
   const [data, setData] = useState<FinanceEntry[]>([]);
 
   useEffect(() => {
-    setData(generateRandomData(50));
+    const _data = generateRandomData(50);
+    console.log("_data", _data);
+    setData(_data);
   }, []);
 
   return (

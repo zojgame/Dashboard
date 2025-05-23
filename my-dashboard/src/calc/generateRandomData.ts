@@ -1,11 +1,8 @@
-type OperationType = "expanses" | "income" | "revenue" | "debt";
-
-interface FinanceEntry {
-  division: "B2B" | "B2C";
-  date: string;
-  amount: string;
-  type: OperationType;
-}
+import { DEBT_CATEGORIES } from "../components/components.config";
+import type {
+  FinanceEntry,
+  OperationType,
+} from "../components/components.types";
 
 export const generateRandomData = (count: number): FinanceEntry[] => {
   const entries: FinanceEntry[] = [];
@@ -21,7 +18,6 @@ export const generateRandomData = (count: number): FinanceEntry[] => {
     const type: OperationType =
       operationTypes[Math.floor(Math.random() * operationTypes.length)];
 
-    // Типичная сумма по типу операции
     const amount = (() => {
       switch (type) {
         case "expanses":
@@ -35,17 +31,21 @@ export const generateRandomData = (count: number): FinanceEntry[] => {
       }
     })();
 
-    // Дата: равномерное распределение по годам
     const month = getRandomInt(0, 11);
     const day = getRandomInt(1, 28);
     const year = new Date().getFullYear();
     const date = new Date(year, month, day).toISOString();
+    const debtType =
+      type === "debt"
+        ? DEBT_CATEGORIES[Math.floor(Math.random() * DEBT_CATEGORIES.length)]
+        : undefined;
 
     entries.push({
       division,
       date,
       amount: amount.toString(),
       type,
+      debtType,
     });
   }
 

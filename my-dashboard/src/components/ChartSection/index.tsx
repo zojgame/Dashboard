@@ -82,7 +82,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
   return (
     <div className="bg-white p-4 rounded shadow">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Общая статистика</h2>
+        <h2 className="text-lg font-semibold text-[#2D4258]">
+          Общая статистика
+        </h2>
         <div className="flex gap-2">
           <button className="text-gray-500 hover:text-black">Неделя</button>
           <button className="text-gray-500 hover:text-black">Месяц</button>

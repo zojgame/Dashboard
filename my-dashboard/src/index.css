@@ -10,6 +10,14 @@
 
 @font-face {
   font-family: "Proxima Nova";
+  src: url("/fonts/ProximaNova/proximanova_blackit") format("opentype"),
+    url("/fonts/ProximaNova/proximanova_blackit") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Proxima Nova";
   src: url("/fonts/ProximaNova/proximanova_bold.otf") format("opentype"),
     url("/fonts/ProximaNova/proximanova_bold.otf") format("opentype");
   font-weight: 700;
@@ -39,4 +47,5 @@ body {
 
   border-radius: 56px;
   display: flex;
+  min-height: 100%;
 }
