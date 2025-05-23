@@ -1,3 +1,4 @@
+import { useAppSelector } from "../../store";
 import type { FinanceEntry } from "../components.types";
 
 interface ProblemZonesProps {
@@ -5,19 +6,25 @@ interface ProblemZonesProps {
 }
 
 const ProblemZones: React.FC<ProblemZonesProps> = ({ data }) => {
-  const debts = data.filter((d) => d.type === "debt");
-  const uniqueData = Array.from(
-    new Map(debts.map((item) => [item.debtType, item])).values()
-  );
+  const { currentRecord } = useAppSelector((state) => state.stats);
+
+  const debts = data
+    .filter(
+      (d) =>
+        d.type === "debt" &&
+        (d.division === currentRecord || currentRecord === "Total")
+    )
+    .slice(0, 10);
 
   return (
-    <div className="bg-white py-4 px-8 rounded-4xl shadow h-full">
+    <div className="bg-white py-4 px-8 rounded-4xl h-fit">
       <h2 className="text-lg text-[#2D4258] mb-4 text-left text-[20px] font-bold leading-11">
         Проблемные зоны
       </h2>
-      {uniqueData.length > 0 ? (
+
+      {debts.length > 0 ? (
         <ul className="space-y-2">
-          {uniqueData.map((item, index) => {
+          {debts.map((item, index) => {
             const isHightDebt = Number(item.amount) > 10000;
 
             return (

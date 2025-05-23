@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Line } from "react-chartjs-2";
 import type { FinanceEntry } from "../components.types";
-import { MONTHS, OPTIONS } from "./ChartSection.config";
+import { OPTIONS } from "./ChartSection.config";
 import {
   Chart as ChartJS,
   LineElement,
@@ -12,6 +11,12 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useAppSelector } from "../../store";
+import { useDispatch } from "react-redux";
+import type { TTimePeriod } from "../../store/stats/stats.types";
+import { changeTimePeriod } from "../../store/stats";
+import { getChartData, groupDataByFilter } from "../../calc/getStats";
+import { useMemo } from "react";
 
 ChartJS.register(
   LineElement,
@@ -28,97 +33,196 @@ interface ChartSectionProps {
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
-  const grouped = data.reduce((acc: any, entry: any) => {
-    const date = new Date(entry.date);
-    const month = date.getMonth();
-    if (!acc[month])
-      acc[month] = { revenue: 0, expanses: 0, income: 0, debt: 0 };
-    acc[month][entry.type] += parseInt(entry.amount);
-    return acc;
-  }, {});
+  const { currentRecord, timePeriod } = useAppSelector((state) => state.stats);
+  const dispatch = useDispatch();
+  const filteredData = data.filter(
+    (d) => d.division === currentRecord || currentRecord === "Total"
+  );
+  const grouped = useMemo(
+    () => groupDataByFilter(filteredData, timePeriod),
+    [timePeriod, filteredData]
+  );
+  const chartData = useMemo(
+    () => getChartData(timePeriod, grouped),
+    [timePeriod, grouped]
+  );
 
-  const chartData = {
-    labels: MONTHS,
-    datasets: [
-      {
-        label: "Выручка",
-        data: MONTHS.map((_, i) => grouped[i]?.revenue || 0),
-        borderColor: "#4ade80",
-        backgroundColor: "#4ade80",
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-      },
-      {
-        label: "Затраты",
-        data: MONTHS.map((_, i) => grouped[i]?.expanses || 0),
-        borderColor: "#3b82f6",
-        backgroundColor: "#3b82f6",
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-      },
-      {
-        label: "Прибыль",
-        data: MONTHS.map((_, i) => grouped[i]?.income || 0),
-        borderColor: "#8b5cf6",
-        backgroundColor: "#8b5cf6",
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-      },
-      {
-        label: "Задолженность",
-        data: MONTHS.map((_, i) => grouped[i]?.debt || 0),
-        borderColor: "#f43f5e",
-        backgroundColor: "#f43f5e",
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-      },
-    ],
+  const handleOnPeriodChange = (period: TTimePeriod) => {
+    return () => {
+      dispatch(changeTimePeriod(period));
+    };
   };
 
+  const revenue = useMemo(
+    () =>
+      new Intl.NumberFormat("ru-RU").format(
+        filteredData
+          .filter((d) => d.type === "revenue")
+          .reduce((acc, curr) => acc + Number(curr.amount), 0)
+      ),
+    [filteredData]
+  );
+
+  const debt = useMemo(
+    () =>
+      new Intl.NumberFormat("ru-RU").format(
+        filteredData
+          .filter((d) => d.type === "debt")
+          .reduce((acc, curr) => acc + Number(curr.amount), 0)
+      ),
+    [filteredData]
+  );
+
+  const expanses = useMemo(
+    () =>
+      new Intl.NumberFormat("ru-RU").format(
+        filteredData
+          .filter((d) => d.type === "expanses")
+          .reduce((acc, curr) => acc + Number(curr.amount), 0)
+      ),
+    [filteredData]
+  );
+
+  const income = useMemo(
+    () =>
+      new Intl.NumberFormat("ru-RU").format(
+        filteredData
+          .filter((d) => d.type === "income")
+          .reduce((acc, curr) => acc + Number(curr.amount), 0)
+      ),
+    [filteredData]
+  );
+
+  const total = useMemo(
+    () =>
+      new Intl.NumberFormat("ru-RU").format(
+        filteredData.reduce((acc, curr) => acc + Number(curr.amount), 0)
+      ),
+    [filteredData]
+  );
+
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-[#2D4258]">
+    <div className="bg-white p-4 rounded-4xl h-full flex flex-col justify-between">
+      <div className="flex justify-between items-center mb-4 pt-[25px] pb-[29px] px-8">
+        <h2 className="text-[20px] font-bold text-[#2D4258] leading-11 align-middle">
           Общая статистика
         </h2>
-        <div className="flex gap-2">
-          <button className="text-gray-500 hover:text-black">Неделя</button>
-          <button className="text-gray-500 hover:text-black">Месяц</button>
-          <button className="text-black border-b-2 border-teal-400">Год</button>
+        <div className="flex gap-5 text-[#D2D1D1] font-semibold text-[16px] transition-all ease-in-out duration-500">
+          <button
+            onClick={handleOnPeriodChange("Week")}
+            className={
+              "leading-6 cursor-pointer transition-all ease-in-out duration-500  " +
+              `${timePeriod === "Week" ? "active_tab_small" : "tab_small"}`
+            }
+          >
+            Неделя
+          </button>
+          <button
+            onClick={handleOnPeriodChange("Months")}
+            className={
+              "leading-6 cursor-pointer transition-all ease-in-out duration-500 " +
+              `${timePeriod === "Months" ? "active_tab_small" : "tab_small"}`
+            }
+          >
+            Месяц
+          </button>
+          <button
+            onClick={handleOnPeriodChange("Years")}
+            className={
+              "leading-6 font-bold cursor-pointer transition-all ease-in-out duration-500 " +
+              `${timePeriod === "Years" ? "active_tab_small" : "tab_small"}`
+            }
+          >
+            Год
+          </button>
         </div>
       </div>
 
-      <Line data={chartData} options={OPTIONS} />
+      <div className="max-h-[216px]">
+        <Line data={chartData} options={OPTIONS} />
+      </div>
 
       <div className="grid grid-cols-5 gap-2 mt-4 text-sm">
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#4CAF50]"></span>
-          <div>Выручка</div>
-          <div className="ml-auto font-medium">₽ 8 615 253</div>
+        <div className="flex items-center gap-[9px]">
+          <span className="w-7 h-7 rounded-full bg-[#73CF7A]"></span>
+
+          <div className="flex flex-col gap-1 text-start">
+            <p className="text-[#6D7986] font-semibold text-sm">Выручка</p>
+
+            <p className="ml-auto text-[16px] text-[#323F47] font-bold">
+              ₽ {revenue}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#2196F3]"></span>
-          <div>Затраты</div>
-          <div className="ml-auto font-medium">₽ 10 157 764</div>
+
+        <div className="flex items-center gap-[9px]">
+          <span className="w-7 h-7 rounded-full bg-[#30C7DC] flex justify-center align-middle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 192 512"
+              className="w-[5px] mx-auto"
+            >
+              <path
+                fill="#ffffff"
+                d="M176 432c0 44.1-35.9 80-80 80s-80-35.9-80-80 35.9-80 80-80 80 35.9 80 80zM25.3 25.2l13.6 272C39.5 310 50 320 62.8 320h66.3c12.8 0 23.3-10 24-22.8l13.6-272C167.4 11.5 156.5 0 142.8 0H49.2C35.5 0 24.6 11.5 25.3 25.2z"
+              />
+            </svg>
+          </span>
+
+          <div className="flex flex-col gap-1 text-start">
+            <p className="text-[#6D7986] font-semibold text-sm">Затраты</p>
+
+            <p className="ml-auto text-[16px] text-[#323F47] font-bold">
+              ₽ {expanses}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#3F51B5]"></span>
-          <div>Прибыль</div>
-          <div className="ml-auto font-medium">₽ -1 542 511</div>
+
+        <div className="flex items-center gap-[9px]">
+          <span className="w-7 h-7 rounded-full bg-[#45AAF2] flex justify-center align-middle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 192 512"
+              className="w-[5px] mx-auto"
+            >
+              <path
+                fill="#ffffff"
+                d="M176 432c0 44.1-35.9 80-80 80s-80-35.9-80-80 35.9-80 80-80 80 35.9 80 80zM25.3 25.2l13.6 272C39.5 310 50 320 62.8 320h66.3c12.8 0 23.3-10 24-22.8l13.6-272C167.4 11.5 156.5 0 142.8 0H49.2C35.5 0 24.6 11.5 25.3 25.2z"
+              />
+            </svg>
+          </span>
+
+          <div className="flex flex-col gap-1 text-start">
+            <p className="text-[#6D7986] font-semibold text-sm">Прибыль</p>
+
+            <p className="ml-auto text-[16px] text-[#323F47] font-bold">
+              ₽ {income}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#FFD700]"></span>
-          <div>Задолженность</div>
-          <div className="ml-auto font-medium">₽ 0</div>
+
+        <div className="flex items-center gap-[9px]">
+          <span className="w-7 h-7 rounded-full bg-[#F5E230]"></span>
+
+          <div className="flex flex-col gap-1 text-start">
+            <p className="text-[#6D7986] font-semibold text-sm">Задолжность</p>
+
+            <p className="ml-auto text-[16px] text-[#323F47] font-bold">
+              ₽ {debt}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-[#9C27B0]"></span>
-          <div>Итог</div>
-          <div className="ml-auto font-medium">₽ 10 157 764</div>
+
+        <div className="flex items-center gap-[9px]">
+          <span className="w-7 h-7 rounded-full bg-[#AC74FC]"></span>
+
+          <div className="flex flex-col gap-1 text-start">
+            <p className="text-[#6D7986] font-semibold text-sm">Итог</p>
+
+            <p className="ml-auto text-[16px] text-[#323F47] font-bold">
+              ₽ {total}
+            </p>
+          </div>
         </div>
       </div>
     </div>
